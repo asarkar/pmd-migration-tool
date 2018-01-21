@@ -26,7 +26,6 @@ dependencies {
     compile(
             "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion",
             "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinCoroutinesVersion",
-            "com.github.kittinunf.fuel:fuel:$fuelVersion",
             "org.slf4j:slf4j-api:$slf4jVersion",
             "com.xenomachina:kotlin-argparser:$kotlinArgparserVersion"
     )
