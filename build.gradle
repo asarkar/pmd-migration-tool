@@ -25,6 +25,7 @@ configurations {
 dependencies {
     compile(
             "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion",
+            "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinCoroutinesVersion",
             "com.github.kittinunf.fuel:fuel:$fuelVersion",
             "org.slf4j:slf4j-api:$slf4jVersion",
             "com.xenomachina:kotlin-argparser:$kotlinArgparserVersion"
@@ -44,7 +45,16 @@ dependencies {
 }
 
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile) {
-    kotlinOptions.jvmTarget = "1.8"
+    kotlinOptions {
+        jvmTarget = "1.8"
+        allWarningsAsErrors = true
+    }
+}
+
+kotlin {
+    experimental {
+        coroutines "enable"
+    }
 }
 
 def schemaDir = "src/main/resources"
@@ -88,4 +98,5 @@ task xjc {
 
 mainClassName = "org.abhijitsarkar.kotlin.pmd.MainKt"
 applicationDefaultJvmArgs = ["-Dcom.xenomachina.argparser.programName=$name"]
+
 

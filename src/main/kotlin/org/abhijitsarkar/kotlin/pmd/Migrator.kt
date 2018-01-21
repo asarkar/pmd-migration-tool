@@ -1,5 +1,9 @@
 package org.abhijitsarkar.kotlin.pmd
 
+import kotlinx.coroutines.experimental.Deferred
+import kotlinx.coroutines.experimental.async
+import kotlinx.coroutines.experimental.runBlocking
+import kotlinx.coroutines.experimental.withTimeout
 import net.sourceforge.pmd.Exclude
 import net.sourceforge.pmd.ObjectFactory
 import net.sourceforge.pmd.Properties
@@ -7,6 +11,7 @@ import net.sourceforge.pmd.Rule
 import net.sourceforge.pmd.Ruleset
 import org.slf4j.LoggerFactory
 import java.nio.file.Path
+import java.util.concurrent.TimeUnit
 import javax.xml.bind.JAXBContext
 
 
@@ -14,11 +19,11 @@ import javax.xml.bind.JAXBContext
  * @author Abhijit Sarkar
  */
 object Migrator {
-    private val logger = LoggerFactory.getLogger(Migrator::class.java)
-    private val ruleMap: Map<String, String>
+    private val LOGGER = LoggerFactory.getLogger(Migrator::class.java)
+    private val RULE_MAP: Map<String, String>
 
     init {
-        ruleMap = PMD.categories()
+        RULE_MAP = PMD.categories()
                 .flatMap { c ->
                     c.value.rule.map { it.name to c.key }
                 }
@@ -32,7 +37,7 @@ object Migrator {
                 it[1]!!.value to it[2]!!.value
             }
         }
-        logger.warn("No match found for rule: $rule")
+        LOGGER.warn("No match found for rule: $rule")
         return null
     }
 
@@ -73,18 +78,19 @@ object Migrator {
 
         return createRule(
                 name = name,
-                ref = "${ruleMap[name]}/$name",
+                ref = "${RULE_MAP[name]}/$name",
                 properties = this.properties
         )
     }
 
-    private fun Rule.toRules(): List<Rule> {
+    private fun Rule.toRules() = async {
         val objectFactory = ObjectFactory()
+        val outer = this@toRules
 
-        return if (this.ref.isRuleset()) {
-            logger.debug("Found ruleset: {}", this.ref)
+        if (outer.ref.isRuleset()) {
+            LOGGER.debug("Found ruleset: {}", outer.ref)
 
-            val categoryMap = PMD.ruleset(this.ref)
+            val categoryMap = PMD.ruleset(outer.ref)
                     .rule
                     .map {
                         split(it.ref)?.first
@@ -94,11 +100,11 @@ object Migrator {
                     .map { it to emptyList<String>() }
                     .toMap()
 
-            val excludeMap = (this.exclude ?: emptyList())
+            val excludeMap = (outer.exclude ?: emptyList())
                     .map { it.name }
-                    .groupBy { ruleMap[it] }
+                    .groupBy { RULE_MAP[it] }
 
-            return (categoryMap.keys + excludeMap.keys)
+            (categoryMap.keys + excludeMap.keys)
                     .map { it to (categoryMap.getOrDefault(it, emptyList()) + excludeMap.getOrDefault(it, emptyList())) }
                     .map { (c, ex) ->
                         createRule(
@@ -108,8 +114,8 @@ object Migrator {
                         )
                     }
         } else {
-            logger.debug("Found rule: {}", this.ref)
-            this.toRule()?.let {
+            LOGGER.debug("Found rule: {}", outer.ref)
+            outer.toRule()?.let {
                 listOf(it)
             } ?: emptyList()
         }
@@ -117,6 +123,14 @@ object Migrator {
 
     private fun String.isNotMigrated() = this.startsWith("rulesets")
     private fun String.isRuleset() = this.isNotMigrated() && this.endsWith(".xml")
+
+    private fun awaitRules(deferred: Deferred<List<Rule>>): List<Rule> {
+        return runBlocking {
+            withTimeout(1L, TimeUnit.SECONDS) {
+                deferred.await()
+            }
+        }
+    }
 
     fun migrate(ruleset: Path): Ruleset {
         val objectFactory = ObjectFactory()
@@ -129,10 +143,12 @@ object Migrator {
                         if (todo.isEmpty()) {
                             null
                         } else {
-                            val (x, y) = todo.flatMap { it.toRules() }
+                            todo.map { it.toRules() }
+                                    .flatMap { awaitRules(it) }
                                     .partition { it.ref.isNotMigrated() }
-
-                            x to (done + y)
+                                    .run {
+                                        first to (done + second)
+                                    }
                         }
                     }
                             .toList()

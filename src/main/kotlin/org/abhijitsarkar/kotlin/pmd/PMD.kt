@@ -6,6 +6,7 @@ import net.sourceforge.pmd.Ruleset
 import java.io.ByteArrayInputStream
 import java.net.URL
 import java.util.Properties
+import java.util.concurrent.ConcurrentHashMap
 import javax.xml.bind.JAXBContext
 
 /**
@@ -13,7 +14,9 @@ import javax.xml.bind.JAXBContext
  */
 object PMD {
     private const val EMPTY = ""
-    private val rulesets: MutableMap<String, Ruleset> = mutableMapOf()
+    private val JAXB_CTX = JAXBContext.newInstance(Ruleset::class.java)
+
+    private val rulesets: MutableMap<String, Ruleset> = ConcurrentHashMap()
 
     init {
         FuelManager.instance.basePath = "https://raw.githubusercontent.com/pmd/pmd/master/pmd-java/src/main/resources"
@@ -45,7 +48,7 @@ object PMD {
 
     fun ruleset(name: String): Ruleset {
         return rulesets.computeIfAbsent(name, {
-            JAXBContext.newInstance(Ruleset::class.java)
+            JAXB_CTX
                     .createUnmarshaller()
                     .unmarshal(URL("${FuelManager.instance.basePath}/$it"))
                     .let { it as Ruleset }
