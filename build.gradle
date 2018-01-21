@@ -1,0 +1,91 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
+    }
+}
+
+group = "org.abhijitsarkar.kotlin"
+version = "1.0-SNAPSHOT"
+
+apply plugin: "kotlin"
+apply plugin: "idea"
+apply plugin: "application"
+
+repositories {
+    jcenter()
+}
+
+configurations {
+    jaxb
+}
+
+dependencies {
+    compile(
+            "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion",
+            "com.github.kittinunf.fuel:fuel:$fuelVersion",
+            "org.slf4j:slf4j-api:$slf4jVersion",
+            "com.xenomachina:kotlin-argparser:$kotlinArgparserVersion"
+    )
+    runtime(
+            "ch.qos.logback:logback-classic:$logbackVersion"
+    )
+    jaxb(
+            "com.sun.xml.bind:jaxb-core:$jaxbVersion",
+            "com.sun.xml.bind:jaxb-impl:$jaxbVersion",
+            "com.sun.xml.bind:jaxb-xjc:$jaxbVersion"
+    )
+    testCompile(
+            "org.jetbrains.kotlin:kotlin-test:$kotlinVersion",
+            "org.jetbrains.kotlin:kotlin-test-junit:$kotlinVersion"
+    )
+}
+
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile) {
+    kotlinOptions.jvmTarget = "1.8"
+}
+
+def schemaDir = "src/main/resources"
+def generatedSources = "$buildDir/generated-sources"
+def xjcOutputDir = "$generatedSources/java/main"
+
+sourceSets {
+    main {
+        java {
+            srcDirs files(xjcOutputDir) {
+                builtBy("xjc")
+            }
+        }
+    }
+}
+
+task xjc {
+    inputs.dir "$schemaDir"
+    outputs.dir "$xjcOutputDir"
+
+    doLast {
+        project.ant {
+            taskdef(
+                    name: "xjc",
+                    classname: "com.sun.tools.xjc.XJCTask",
+                    classpath: configurations.jaxb.asPath)
+            xjc(
+                    destdir: "$xjcOutputDir",
+                    package: "net.sourceforge.pmd",
+                    schema: "$schemaDir/ruleset_2_0_0.xsd",
+                    binding: "$schemaDir/binding.xjb",
+                    encoding: "UTF-8",
+            ) {
+                arg(line: "-verbose")
+                arg(line: "-no-header")
+                arg(line: "-mark-generated")
+            }
+        }
+    }
+}
+
+mainClassName = "org.abhijitsarkar.kotlin.pmd.MainKt"
+applicationDefaultJvmArgs = ["-Dcom.xenomachina.argparser.programName=$name"]
+
