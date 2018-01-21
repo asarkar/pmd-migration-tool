@@ -24,23 +24,47 @@ import javax.xml.transform.stream.StreamResult
  * @author Abhijit Sarkar
  */
 
+private var verbose: Boolean = false
+
+val isVerbose get() = verbose
+
 class CmdLineArgs(parser: ArgParser) {
+    val force by parser.flagging(
+            "-f", "--force",
+            help = "overwrite output file if exists, default false"
+    )
+    val skipValidation by parser.flagging(
+            "-x", "--skip-validation",
+            help = "skip validation of generated ruleset, default false"
+    )
+    val verbose by parser.flagging(
+            "-v", "--verbose",
+            help = "enable verbose mode, default false"
+    )
+            .default(true)
     val output by parser.storing(
             "-o", "--output",
-            help = "output file path"
+            help = "output file path, default stdout"
     ) { Paths.get(this) }
             .default {
                 null
             }
-    val force by parser.flagging(
-            "-f", "--force",
-            help = "overwrite output file if exists"
-    )
     val ruleset: Path by parser.positional("ruleset path") { Paths.get(this) }
 }
 
+fun unmarshal(ruleset: Path): Ruleset {
+    return JAXBContext.newInstance(Ruleset::class.java)
+            .createUnmarshaller()
+            .unmarshal(ruleset.toFile())
+            .let { it as Ruleset }
+}
+
+fun String.isNotMigrated() = this.startsWith("rulesets")
+
 fun main(args: Array<String>): Unit = mainBody {
     val cmdLineArgs = ArgParser(args).parseInto(::CmdLineArgs)
+    verbose = cmdLineArgs.verbose
+
     val out = cmdLineArgs.output?.let {
         it.apply {
             if (Files.exists(this) && !cmdLineArgs.force) {
@@ -54,7 +78,7 @@ fun main(args: Array<String>): Unit = mainBody {
                 .run { Files.newBufferedWriter(this, StandardCharsets.UTF_8, CREATE, TRUNCATE_EXISTING, WRITE) }
     } ?: PrintWriter(System.out)
 
-    val r = cmdLineArgs.ruleset.let {
+    val input = cmdLineArgs.ruleset.let {
         it.apply {
             if (!Files.exists(this) || !Files.isReadable(this)) {
                 throw IllegalArgumentException("Input file doesn't exist or isn't readable.")
@@ -64,10 +88,15 @@ fun main(args: Array<String>): Unit = mainBody {
                 throw IllegalArgumentException("Input file is a directory.")
             }
         }
+                .run { unmarshal(this) }
     }
 
     try {
-        val ruleset = Migrator.migrate(r)
+        val ruleset = Migrator.migrate(input).apply {
+            if (!cmdLineArgs.skipValidation) {
+                RulesetValidator.validate(input, this)
+            }
+        }
 
         val doc = DocumentBuilderFactory.newInstance()
                 .apply {

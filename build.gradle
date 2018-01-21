@@ -27,10 +27,8 @@ dependencies {
             "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion",
             "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinCoroutinesVersion",
             "org.slf4j:slf4j-api:$slf4jVersion",
+            "ch.qos.logback:logback-classic:$logbackVersion",
             "com.xenomachina:kotlin-argparser:$kotlinArgparserVersion"
-    )
-    runtime(
-            "ch.qos.logback:logback-classic:$logbackVersion"
     )
     jaxb(
             "com.sun.xml.bind:jaxb-core:$jaxbVersion",

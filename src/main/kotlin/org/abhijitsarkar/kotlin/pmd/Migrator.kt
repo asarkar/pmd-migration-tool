@@ -1,5 +1,7 @@
 package org.abhijitsarkar.kotlin.pmd
 
+import ch.qos.logback.classic.Level
+import ch.qos.logback.classic.Logger
 import kotlinx.coroutines.experimental.Deferred
 import kotlinx.coroutines.experimental.async
 import kotlinx.coroutines.experimental.runBlocking
@@ -10,16 +12,18 @@ import net.sourceforge.pmd.Properties
 import net.sourceforge.pmd.Rule
 import net.sourceforge.pmd.Ruleset
 import org.slf4j.LoggerFactory
-import java.nio.file.Path
 import java.util.concurrent.TimeUnit
-import javax.xml.bind.JAXBContext
 
 
 /**
  * @author Abhijit Sarkar
  */
 object Migrator {
-    private val LOGGER = LoggerFactory.getLogger(Migrator::class.java)
+    private val LOGGER = LoggerFactory.getLogger(Migrator::class.java).apply {
+        if (isVerbose) {
+            (this as Logger).level = Level.DEBUG
+        }
+    }
     private val RULE_MAP: Map<String, String>
 
     init {
@@ -31,21 +35,15 @@ object Migrator {
     }
 
     private fun split(rule: String): Pair<String, String>? {
-        val m = "(.*\\.xml)/(.*)".toRegex().matchEntire(rule)
-        if (m?.groups?.isNotEmpty() == true && m.groups.size >= 3) {
-            return m.groups.let {
-                it[1]!!.value to it[2]!!.value
+        return "(.*\\.xml)(?:/)?(.*)?".toRegex().matchEntire(rule).let {
+            when (it?.groups?.size) {
+                3 -> it.groups[1]!!.value to it.groups[2]!!.value
+                else -> {
+                    LOGGER.warn("No match found for rule: $rule")
+                    null
+                }
             }
         }
-        LOGGER.warn("No match found for rule: $rule")
-        return null
-    }
-
-    private fun unmarshal(ruleset: Path): Ruleset {
-        return JAXBContext.newInstance(Ruleset::class.java)
-                .createUnmarshaller()
-                .unmarshal(ruleset.toFile())
-                .let { it as Ruleset }
     }
 
     private fun createRule(
@@ -60,12 +58,12 @@ object Migrator {
                     if (name != null) {
                         rule.name = name
                     }
-                    if (exclude != null && exclude.isNotEmpty()) {
+                    if (exclude?.isNotEmpty() == true) {
                         exclude.sortedBy { it.name }.apply {
                             rule.exclude.addAll(this)
                         }
                     }
-                    if (properties != null && properties.property != null && properties.property.isNotEmpty()) {
+                    if (properties?.property?.isNotEmpty() == true) {
                         rule.properties = properties.apply {
                             property.sortBy { it.name }
                         }
@@ -105,8 +103,11 @@ object Migrator {
                     .groupBy { RULE_MAP[it] }
 
             (categoryMap.keys + excludeMap.keys)
-                    .map { it to (categoryMap.getOrDefault(it, emptyList()) + excludeMap.getOrDefault(it, emptyList())) }
+                    .map { it to ((categoryMap[it] ?: emptyList()) + (excludeMap[it] ?: emptyList())) }
                     .map { (c, ex) ->
+                        if (ex.isNotEmpty()) {
+                            LOGGER.debug("Found exclusions: $ex")
+                        }
                         createRule(
                                 ref = c as String,
                                 exclude = ex
@@ -121,8 +122,7 @@ object Migrator {
         }
     }
 
-    private fun String.isNotMigrated() = this.startsWith("rulesets")
-    private fun String.isRuleset() = this.isNotMigrated() && this.endsWith(".xml")
+    private fun String.isRuleset() = isNotMigrated() && this.endsWith(".xml")
 
     private fun awaitRules(deferred: Deferred<List<Rule>>): List<Rule> {
         return runBlocking {
@@ -132,11 +132,10 @@ object Migrator {
         }
     }
 
-    fun migrate(ruleset: Path): Ruleset {
+    fun migrate(ruleset: Ruleset): Ruleset {
         val objectFactory = ObjectFactory()
-        val r = unmarshal(ruleset)
 
-        return r
+        return ruleset
                 .rule
                 .flatMap { rule ->
                     generateSequence(listOf(rule) to emptyList<Rule>()) { (todo, done) ->
@@ -147,7 +146,7 @@ object Migrator {
                                     .flatMap { awaitRules(it) }
                                     .partition { it.ref.isNotMigrated() }
                                     .run {
-                                        first to (done + second)
+                                        first to (second + done)
                                     }
                         }
                     }
@@ -170,8 +169,8 @@ object Migrator {
                 .let {
                     objectFactory.createRuleset().apply {
                         rule.addAll(it.sortedBy { it.ref })
-                        name = r.name
-                        description = r.description
+                        name = ruleset.name
+                        description = ruleset.description
                     }
                 }
     }

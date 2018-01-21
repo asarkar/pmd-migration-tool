@@ -10,7 +10,11 @@ import kotlin.test.Test
 class MigratorTest {
     @Test
     fun `should migrate ruleset`() {
-        Migrator.migrate(Paths.get(javaClass.getResource("/ruleset.xml").toURI()))
-                .apply { RulesetVerifier.verify(this) }
+        val ruleset = unmarshal(Paths.get(javaClass.getResource("/ruleset.xml").toURI()))
+        Migrator.migrate(ruleset)
+                .apply {
+                    RulesetVerifier.verify(this)
+                    RulesetValidator.validate(ruleset, this)
+                }
     }
 }

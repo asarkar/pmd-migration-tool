@@ -1,6 +1,6 @@
 # pmd-migration-tool
 
-This application migrates a pre-PMD-6 ruleset to the new format.
+This application migrates a pre-PMD6 ruleset to the new format.
 
 To build:
 ```

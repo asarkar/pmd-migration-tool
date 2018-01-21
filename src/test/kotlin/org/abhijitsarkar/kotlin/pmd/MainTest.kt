@@ -1,9 +1,7 @@
 package org.abhijitsarkar.kotlin.pmd
 
-import net.sourceforge.pmd.Ruleset
 import java.nio.file.Files
 import java.nio.file.Paths
-import javax.xml.bind.JAXBContext
 import kotlin.test.Test
 
 /**
@@ -12,24 +10,20 @@ import kotlin.test.Test
 class MainTest {
     @Test
     fun `should write migrated ruleset to given file`() {
-        val out = Files.createTempFile(null, "xml").apply {
+        val out = Files.createTempFile(null, ".xml").apply {
             Runtime.getRuntime().addShutdownHook(Thread {
                 Files.delete(this)
             })
         }
 
-        val args = arrayOf(
+        arrayOf(
                 "-f",
                 "-o",
                 out.toAbsolutePath().toString(),
                 Paths.get(javaClass.getResource("/ruleset.xml").toURI()).toAbsolutePath().toString()
         )
-        main(args)
+                .apply { main(this) }
 
-        JAXBContext.newInstance(Ruleset::class.java)
-                .createUnmarshaller()
-                .unmarshal(out.toFile()).apply {
-            RulesetVerifier.verify(this as Ruleset)
-        }
+        RulesetVerifier.verify(unmarshal(out))
     }
 }
