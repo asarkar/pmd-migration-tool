@@ -36,10 +36,6 @@ object Migrator {
             return m.groups.let {
                 it[1]!!.value to it[2]!!.value
             }
-        } else if (rule.contains('-')) {
-            return rule.split('-', limit = 2).let {
-                "rulesets/${it[0]}/${it[1]}/.xml" to ""
-            }
         }
         LOGGER.warn("No match found for rule: $rule")
         return null
