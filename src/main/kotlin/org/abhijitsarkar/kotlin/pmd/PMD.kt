@@ -23,11 +23,8 @@ object PMD {
 
     private fun categoriesInternal(): List<String> {
         return (URL("$BASE_URL/category/java/categories.properties").openConnection() as HttpURLConnection).apply {
-            requestMethod = "GET"
-            doOutput = false
             connectTimeout = 500
             readTimeout = 3000
-            instanceFollowRedirects = true
 
             connect()
         }

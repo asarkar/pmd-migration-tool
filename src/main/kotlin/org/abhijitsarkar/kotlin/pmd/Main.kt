@@ -7,6 +7,7 @@ import net.sourceforge.pmd.Ruleset
 import java.io.PrintWriter
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
+import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.StandardOpenOption.CREATE
 import java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
@@ -27,7 +28,7 @@ class CmdLineArgs(parser: ArgParser) {
     val output by parser.storing(
             "-o", "--output",
             help = "output file path"
-    )
+    ) { Paths.get(this) }
             .default {
                 null
             }
@@ -35,13 +36,13 @@ class CmdLineArgs(parser: ArgParser) {
             "-f", "--force",
             help = "overwrite output file if exists"
     )
-    val ruleset by parser.positional("ruleset path")
+    val ruleset: Path by parser.positional("ruleset path") { Paths.get(this) }
 }
 
 fun main(args: Array<String>): Unit = mainBody {
     val cmdLineArgs = ArgParser(args).parseInto(::CmdLineArgs)
     val out = cmdLineArgs.output?.let {
-        Paths.get(it).apply {
+        it.apply {
             if (Files.exists(this) && !cmdLineArgs.force) {
                 throw IllegalArgumentException("Output file already exists.")
             }
@@ -54,7 +55,7 @@ fun main(args: Array<String>): Unit = mainBody {
     } ?: PrintWriter(System.out)
 
     val r = cmdLineArgs.ruleset.let {
-        Paths.get(it).apply {
+        it.apply {
             if (!Files.exists(this) || !Files.isReadable(this)) {
                 throw IllegalArgumentException("Input file doesn't exist or isn't readable.")
             }
