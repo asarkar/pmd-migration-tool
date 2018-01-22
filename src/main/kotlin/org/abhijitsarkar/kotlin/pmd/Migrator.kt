@@ -1,7 +1,5 @@
 package org.abhijitsarkar.kotlin.pmd
 
-import ch.qos.logback.classic.Level
-import ch.qos.logback.classic.Logger
 import kotlinx.coroutines.experimental.Deferred
 import kotlinx.coroutines.experimental.async
 import kotlinx.coroutines.experimental.runBlocking
@@ -19,11 +17,7 @@ import java.util.concurrent.TimeUnit
  * @author Abhijit Sarkar
  */
 object Migrator {
-    private val LOGGER = LoggerFactory.getLogger(Migrator::class.java).apply {
-        if (isVerbose) {
-            (this as Logger).level = Level.DEBUG
-        }
-    }
+    private val LOGGER = LoggerFactory.getLogger(Migrator::class.java)
     private val RULE_MAP: Map<String, String>
 
     init {
@@ -74,6 +68,10 @@ object Migrator {
     private fun Rule.toRule(): Rule? {
         val name = split(this.ref)?.second ?: return null
 
+        if (this.name != null && this.name != name) {
+            LOGGER.warn("Rule: {} has been renamed to: {}", this.name, name)
+        }
+
         return createRule(
                 name = name,
                 ref = "${RULE_MAP[name]}/$name",
@@ -91,7 +89,12 @@ object Migrator {
             val categoryMap = PMD.ruleset(outer.ref)
                     .rule
                     .map {
-                        split(it.ref)?.first
+                        split(it.ref)?.apply {
+                            if (it.name != null && it.name != second) {
+                                LOGGER.warn("Rule: {} has been renamed to: {}", it.name, second)
+                            }
+                        }
+                                ?.let { it.first }
                     }
                     .filter { it != null }
                     .distinct()

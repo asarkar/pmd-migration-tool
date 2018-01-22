@@ -1,10 +1,14 @@
 package org.abhijitsarkar.kotlin.pmd
 
+import ch.qos.logback.classic.Level
+import ch.qos.logback.classic.Logger
 import com.xenomachina.argparser.ArgParser
 import com.xenomachina.argparser.default
 import com.xenomachina.argparser.mainBody
 import net.sourceforge.pmd.Ruleset
+import org.slf4j.LoggerFactory
 import java.io.PrintWriter
+import java.lang.invoke.MethodHandles
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
@@ -20,13 +24,10 @@ import javax.xml.transform.TransformerFactory
 import javax.xml.transform.dom.DOMSource
 import javax.xml.transform.stream.StreamResult
 
+
 /**
  * @author Abhijit Sarkar
  */
-
-private var verbose: Boolean = false
-
-val isVerbose get() = verbose
 
 class CmdLineArgs(parser: ArgParser) {
     val force by parser.flagging(
@@ -63,7 +64,13 @@ fun String.isNotMigrated() = this.startsWith("rulesets")
 
 fun main(args: Array<String>): Unit = mainBody {
     val cmdLineArgs = ArgParser(args).parseInto(::CmdLineArgs)
-    verbose = cmdLineArgs.verbose
+    if (cmdLineArgs.verbose) {
+        MethodHandles.lookup().lookupClass().`package`.apply {
+            LoggerFactory.getLogger(this.name).apply {
+                (this as Logger).level = Level.DEBUG
+            }
+        }
+    }
 
     val out = cmdLineArgs.output?.let {
         it.apply {

@@ -1,7 +1,5 @@
 package org.abhijitsarkar.kotlin.pmd
 
-import ch.qos.logback.classic.Level
-import ch.qos.logback.classic.Logger
 import net.sourceforge.pmd.Ruleset
 import org.slf4j.LoggerFactory
 import java.io.IOException
@@ -17,11 +15,7 @@ import javax.xml.bind.JAXBContext
  */
 object PMD {
     private const val EMPTY = ""
-    private val LOGGER = LoggerFactory.getLogger(PMD::class.java).apply {
-        if (isVerbose) {
-            (this as Logger).level = Level.DEBUG
-        }
-    }
+    private val LOGGER = LoggerFactory.getLogger(PMD::class.java)
     private const val BASE_URL = "https://raw.githubusercontent.com/pmd/pmd/master/pmd-java/src/main/resources"
     private val JAXB_CTX = JAXBContext.newInstance(Ruleset::class.java)
 
