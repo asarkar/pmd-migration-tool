@@ -1,0 +1,7 @@
+language: java
+
+script:
+  - cd $PROJECT_DIR && gradlew clean test installDist
+
+after_success:
+  - scripts/post-install.sh
