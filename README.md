@@ -1,4 +1,5 @@
 # pmd-migration-tool
+[![Build Status](https://travis-ci.org/asarkar/pmd-migration-tool.svg?branch=master)](https://travis-ci.org/asarkar/pmd-migration-tool)
 
 This application migrates a pre-PMD6 ruleset to the new format.
 
@@ -24,3 +25,4 @@ $ ./pmd-migration-tool /path/to/ruleset
 > There is a sample ruleset in `src/test/resources`.
 
 After opening in IDE, run `xjc` Gradle task to generate the PMD classes.
+
