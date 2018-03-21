@@ -23,7 +23,7 @@ configurations {
 }
 
 dependencies {
-    compile(
+    implementation(
             "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion",
             "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinCoroutinesVersion",
             "org.slf4j:slf4j-api:$slf4jVersion",
@@ -35,7 +35,7 @@ dependencies {
             "com.sun.xml.bind:jaxb-impl:$jaxbVersion",
             "com.sun.xml.bind:jaxb-xjc:$jaxbVersion"
     )
-    testCompile(
+    testImplementation(
             "org.jetbrains.kotlin:kotlin-test:$kotlinVersion",
             "org.jetbrains.kotlin:kotlin-test-junit:$kotlinVersion"
     )

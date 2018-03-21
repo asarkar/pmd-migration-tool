@@ -8,7 +8,7 @@ import net.sourceforge.pmd.Ruleset
 object RulesetValidator {
     fun validate(old: Ruleset, new: Ruleset) {
         (old.rule to new.rule).apply {
-            second.partition { it.ref.isNotMigrated() }.first.apply {
+            second.partition { it.ref?.isNotMigrated() == true }.first.apply {
                 assert(this.isEmpty(), {
                     "Some rules have not been migrated: $this"
                 })

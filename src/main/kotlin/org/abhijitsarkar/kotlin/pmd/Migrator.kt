@@ -10,6 +10,7 @@ import net.sourceforge.pmd.Properties
 import net.sourceforge.pmd.Rule
 import net.sourceforge.pmd.Ruleset
 import org.slf4j.LoggerFactory
+import java.util.Objects
 import java.util.concurrent.TimeUnit
 
 
@@ -42,16 +43,14 @@ object Migrator {
 
     private fun createRule(
             name: String? = null,
-            ref: String, exclude:
+            ref: String?, exclude:
             List<Exclude>? = null,
             properties: Properties? = null
     ): Rule {
         return ObjectFactory().createRule()
                 .also { rule ->
                     rule.ref = ref
-                    if (name != null) {
-                        rule.name = name
-                    }
+                    rule.name = name
                     if (exclude?.isNotEmpty() == true) {
                         exclude.sortedBy { it.name }.apply {
                             rule.exclude.addAll(this)
@@ -66,7 +65,7 @@ object Migrator {
     }
 
     private fun Rule.toRule(): Rule? {
-        val name = split(this.ref)?.second ?: return null
+        val name = this.ref?.let { split(it) }?.second ?: return this
 
         if (this.name != null && this.name != name) {
             LOGGER.warn("Rule: {} has been renamed to: {}", this.name, name)
@@ -83,7 +82,7 @@ object Migrator {
         val objectFactory = ObjectFactory()
         val outer = this@toRules
 
-        if (outer.ref.isRuleset()) {
+        if (outer.ref?.isRuleset() == true) {
             LOGGER.debug("Found ruleset: {}", outer.ref)
 
             val categoryMap = PMD.ruleset(outer.ref)
@@ -147,7 +146,7 @@ object Migrator {
                         } else {
                             todo.map { it.toRules() }
                                     .flatMap { awaitRules(it) }
-                                    .partition { it.ref.isNotMigrated() }
+                                    .partition { it.ref?.isNotMigrated() == true }
                                     .run {
                                         first to (second + done)
                                     }
@@ -156,10 +155,11 @@ object Migrator {
                             .toList()
                             .flatMap { it.second }
                 }
-                .groupBy { it.ref }
+                .groupBy { RuleWrapper(it) }
                 .map {
                     createRule(
-                            ref = it.key,
+                            ref = it.key.rule.ref,
+                            name = it.key.rule.name,
                             exclude = it.value.flatMap { it.exclude }.distinctBy { it.name },
                             properties = it.value.flatMap { it.properties?.property ?: emptyList() }
                                     .let {
@@ -167,14 +167,42 @@ object Migrator {
                                             property.addAll(it)
                                         }
                                     }
-                    )
+                    ).also { rule ->
+                        it.value.firstOrNull { it.name == rule.name }?.also { orig ->
+                            rule.description = orig.description
+                            rule.priority = orig.priority
+                            rule.language = orig.language
+                            rule.minimumLanguageVersion = orig.minimumLanguageVersion
+                            rule.maximumLanguageVersion = orig.maximumLanguageVersion
+                            rule.since = orig.since
+                            rule.message = orig.message
+                            rule.externalInfoUrl = orig.externalInfoUrl
+                            rule.clazz = orig.clazz
+                            rule.isDfa = orig.isDfa
+                        }
+                    }
                 }
                 .let {
                     objectFactory.createRuleset().apply {
-                        rule.addAll(it.sortedBy { it.ref })
+                        rule.addAll(it.sortedWith(compareBy(nullsLast<String>()) { it.ref }))
                         name = ruleset.name
                         description = ruleset.description
                     }
                 }
+    }
+
+    class RuleWrapper(val rule: Rule) {
+        private val key = rule.ref ?: rule.name
+
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            return key == (other as RuleWrapper).key
+        }
+
+        override fun hashCode(): Int {
+            return Objects.hashCode(key)
+        }
     }
 }
