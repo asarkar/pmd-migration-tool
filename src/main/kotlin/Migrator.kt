@@ -1,4 +1,4 @@
-package org.abhijitsarkar.kotlin.pmd
+package org.abhijitsarkar.pmd
 
 import kotlinx.coroutines.experimental.Deferred
 import kotlinx.coroutines.experimental.async
@@ -157,9 +157,10 @@ object Migrator {
                 }
                 .groupBy { RuleWrapper(it) }
                 .map {
+                    val ref = it.key.rule.ref
                     createRule(
-                            ref = it.key.rule.ref,
-                            name = it.key.rule.name,
+                            ref = ref,
+                            name = if (ref == null) it.key.rule.name else null,
                             exclude = it.value.flatMap { it.exclude }.distinctBy { it.name },
                             properties = it.value.flatMap { it.properties?.property ?: emptyList() }
                                     .let {
@@ -179,6 +180,8 @@ object Migrator {
                             rule.externalInfoUrl = orig.externalInfoUrl
                             rule.clazz = orig.clazz
                             rule.isDfa = orig.isDfa
+                            rule.isTypeResolution = orig.isTypeResolution
+                            rule.isDeprecated = orig.isDeprecated
                         }
                     }
                 }

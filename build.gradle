@@ -7,7 +7,7 @@ buildscript {
     }
 }
 
-group = "org.abhijitsarkar.kotlin"
+group = "org.abhijitsarkar"
 version = "1.0-SNAPSHOT"
 
 apply plugin: "kotlin"
@@ -93,7 +93,7 @@ task xjc {
     }
 }
 
-mainClassName = "org.abhijitsarkar.kotlin.pmd.MainKt"
+mainClassName = "org.abhijitsarkar.pmd.MainKt"
 applicationDefaultJvmArgs = ["-Dcom.xenomachina.argparser.programName=$name"]
 
 

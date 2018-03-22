@@ -1,4 +1,4 @@
-package org.abhijitsarkar.kotlin.pmd
+package org.abhijitsarkar.pmd
 
 import net.sourceforge.pmd.Ruleset
 
