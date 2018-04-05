@@ -3,16 +3,20 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
+        classpath(
+                "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion",
+                "com.jfrog.bintray.gradle:gradle-bintray-plugin:$bintrayPluginVersion"
+        )
     }
 }
 
 group = "org.abhijitsarkar"
-version = "1.0-SNAPSHOT"
+version = "1.0.0"
 
 apply plugin: "kotlin"
 apply plugin: "idea"
 apply plugin: "application"
+apply plugin: "com.jfrog.bintray"
 
 repositories {
     jcenter()
@@ -95,5 +99,32 @@ task xjc {
 
 mainClassName = "org.abhijitsarkar.pmd.MainKt"
 applicationDefaultJvmArgs = ["-Dcom.xenomachina.argparser.programName=$name"]
+
+bintray {
+    user = findProperty("bintrayUser")
+    key = findProperty("bintrayApiKey")
+    configurations = ["archives"]
+    pkg {
+        repo = "mvn"
+        name = project.name
+        desc = "Migrates a pre-PMD6 ruleset to the new format"
+        websiteUrl = "https://github.com/asarkar/pmd-migration-tool"
+        issueTrackerUrl = "https://github.com/asarkar/pmd-migration-tool/issues"
+        vcsUrl = "https://github.com/asarkar/pmd-migration-tool.git"
+        githubRepo = "asarkar/pmd-migration-tool"
+        githubReleaseNotesFile = "README.md"
+        labels = ["pmd", project.name]
+        licenses = ["GPL-3.0"]
+        publicDownloadNumbers = true
+        version {
+            name = project.version
+            gpg {
+                sign = true
+            }
+        }
+    }
+    override = true
+    publish = true
+}
 
 
