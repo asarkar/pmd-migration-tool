@@ -3,7 +3,14 @@
 
 This application migrates a pre-PMD6 ruleset to the new format.
 
-**To run**:
+**Build locally**:
+```
+$ ./gradlew clean installDist
+```
+
+> After opening in IDE, run `xjc` Gradle task to generate the PMD classes.
+
+**Run**:
 
 It is distributed in two formats, ZIP and TAR, both available on [Bintray](https://bintray.com/asarkar/mvn/pmd-migration-tool).
 Download and extract an archive, navigate to the `bin` directory and execute the script.
@@ -19,12 +26,10 @@ $ ./pmd-migration-tool /path/to/ruleset
 
 > There is a sample ruleset in `src/test/resources`.
 
-**To build locally**:
+**Publish to Bintray**:
 ```
-$ ./gradlew clean installDist
+$ ./gradlew -P bintrayUser=user -P bintrayApiKey=secret -P bintray.dryRun=false clean test installDist bintrayUpload
 ```
-
-> After opening in IDE, run `xjc` Gradle task to generate the PMD classes.
 
 ## Contribute
 

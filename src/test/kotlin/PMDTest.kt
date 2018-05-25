@@ -9,6 +9,6 @@ import kotlin.test.assertEquals
 class PMDTest {
     @Test
     fun `should fetch categories`() {
-        assertEquals(7, PMD.categories().size)
+        assertEquals(8, PMD.categories().size)
     }
 }
