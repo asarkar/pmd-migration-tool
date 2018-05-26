@@ -28,7 +28,8 @@ $ ./pmd-migration-tool /path/to/ruleset
 
 **Publish to Bintray**:
 ```
-$ ./gradlew -P bintrayUser=user -P bintrayApiKey=secret -P bintray.dryRun=false clean test installDist bintrayUpload
+$ ./gradlew -P bintrayUser=user -P bintrayApiKey=secret \
+    clean test bintrayUpload
 ```
 
 ## Contribute

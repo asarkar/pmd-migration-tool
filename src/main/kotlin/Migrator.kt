@@ -111,7 +111,7 @@ object Migrator {
                             LOGGER.debug("Found exclusions: $ex")
                         }
                         createRule(
-                                ref = c as String,
+                                ref = c,
                                 exclude = ex
                                         .map { objectFactory.createExclude().apply { this.name = it } }
                         )
