@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         name="ruleset"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 http://pmd.sourceforge.net/ruleset_2_0_0.xsd">
+    <description>https://github.com/asarkar/pmd-migration-tool/issues/5</description>
+    <rule ref="rulesets/java/coupling.xml">
+        <exclude name="ExcessiveImports"/>
+    </rule>
+</ruleset>
+

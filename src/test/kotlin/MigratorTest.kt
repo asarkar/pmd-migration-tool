@@ -41,4 +41,23 @@ class MigratorTest {
 
         RulesetValidator.validate(ruleset, migrated)
     }
+
+    @Test
+    fun `should migrate rules individually`() {
+        val ruleset = unmarshal(Paths.get(javaClass.getResource("/ruleset-issue-5.xml").toURI()))
+        val migrated = Migrator.migrate(ruleset)
+
+        assertNotNull(migrated)
+        assertEquals(4, migrated.rule.size)
+
+        assertEquals(listOf(
+                "LooseCoupling",
+                "CouplingBetweenObjects",
+                "LawOfDemeter",
+                "LoosePackageCoupling"),
+                migrated.rule.map { it.name }
+        )
+
+        RulesetValidator.validate(ruleset, migrated)
+    }
 }
