@@ -28,12 +28,12 @@ object Migrator {
                 .toMap()
     }
 
-    internal fun split(rule: String): Pair<String, String>? {
-        return "(.*\\.xml)(?:/)?(.*)?".toRegex().matchEntire(rule).let {
+    internal fun split(ref: String): Pair<String, String>? {
+        return "(.*\\.xml)(?:/)?(.*)?".toRegex().matchEntire(ref).let {
             when (it?.groups?.size) {
                 3 -> it.groups[1]!!.value to it.groups[2]!!.value
                 else -> {
-                    LOGGER.warn("No match found for rule: $rule")
+                    LOGGER.warn("No match found for rule: $ref")
                     null
                 }
             }
@@ -64,7 +64,8 @@ object Migrator {
     }
 
     private fun Rule.toRule(): Rule? {
-        val name = this.ref?.let { split(it) }?.second ?: return this
+        val name = if (RULE_MAP.containsKey(this.name)) this.name
+        else this.ref?.let { split(it) }?.second ?: return this
 
         if (this.name != null && this.name != name) {
             LOGGER.warn("Rule: {} has been renamed to: {}", this.name, name)
@@ -84,9 +85,8 @@ object Migrator {
             it.message = message
             it.externalInfoUrl = externalInfoUrl
             it.clazz = clazz
-            it.isDfa = isDfa
-            it.isTypeResolution = isTypeResolution
-            it.isDeprecated = isDeprecated
+            if (isDfa == true) it.isDfa = true
+            if (isTypeResolution) it.isTypeResolution = true
         }
     }
 
