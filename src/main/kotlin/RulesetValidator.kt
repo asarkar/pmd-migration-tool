@@ -14,13 +14,17 @@ object RulesetValidator {
                 })
             }
 
-            val ex1 = first.flatMap { it.exclude.map { it.name } }.toSet()
-            val ex2 = second.flatMap { it.exclude.map { it.name } }
-            (ex1 to ex2).apply {
-                assert(first.size == second.size, {
-                    "Old ruleset had ${first.size} exclusions, new one has ${second.size}. Diff: ${first - second}"
-                })
-            }
+            val excludes = first
+                    .flatMap { it.exclude.map { it.name } }
+                    .toSet()
+            val oldNames = first
+                    .mapNotNull { it.name ?: it.ref?.let { Migrator.split(it) }?.second }
+                    .toSet()
+            val newNames = second.mapNotNull { it.name }
+                    .toSet()
+            // excluded rules shouldn't be in new ruleset unless they'd been redefined
+            val exclusions = excludes.intersect(newNames) - oldNames
+            assert(exclusions.isEmpty(), { "Found rules that're supposed to be excluded: $exclusions" })
         }
     }
 }
